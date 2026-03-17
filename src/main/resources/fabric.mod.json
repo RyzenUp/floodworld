@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "floodworld",
+  "version": "1.0.0",
+  "name": "FloodWorld",
+  "description": "Replaces all air with water during chunk generation.",
+  "authors": ["RyzenUp"],
+  "contact": {},
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.floodworld.FloodWorldMod"],
+    "modmenu": ["com.floodworld.client.FloodWorldModMenuIntegration"]
+  },
+  "mixins": ["floodworld.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "fabric-api": "*",
+    "minecraft": ">=1.21",
+    "java": ">=21",
+    "cloth-config": "*",
+    "modmenu": "*"
+  }
+}
