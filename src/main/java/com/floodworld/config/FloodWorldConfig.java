@@ -12,11 +12,9 @@ public class FloodWorldConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static FloodWorldConfig instance;
 
-    // Config fields
     public boolean replaceAir = true;
     public boolean replaceCaveAir = true;
     public int maxWaterHeight = 250;
-    public boolean nativeFlooding = true; // true = during generation, false = post-processing tick queue
 
     public static FloodWorldConfig getInstance() {
         if (instance == null) {
@@ -47,3 +45,4 @@ public class FloodWorldConfig {
         }
     }
 }
+
