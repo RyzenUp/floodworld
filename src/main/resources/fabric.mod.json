@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "floodworld",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "name": "FloodWorld",
   "description": "Floods your world by generating water instead of air below a certain y-level.",
   "authors": ["RyzenUp"],
