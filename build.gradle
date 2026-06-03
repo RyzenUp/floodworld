@@ -1,0 +1,35 @@
+plugins {
+    id 'net.neoforged.moddev' version '2.0.+'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+neoForge {
+    version = project.neoforge_version
+    mods {
+        floodworld {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+repositories {
+    maven { url "https://maven.shedaniel.me/" }
+}
+
+dependencies {
+    implementation("me.shedaniel.cloth:cloth-config-neoforge:15.0.140")
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = 'UTF-8'
+}
