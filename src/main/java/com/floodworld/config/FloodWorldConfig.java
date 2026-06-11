@@ -17,12 +17,15 @@ public class FloodWorldConfig {
 
     public boolean enableOverworld = true;
     public int overworldWaterHeight = 250;
+    public boolean overworldWaterlog = true;
 
     public boolean enableNether = false;
     public int netherWaterHeight = 100;
+    public boolean netherWaterlog = true;
 
     public boolean enableEnd = false;
     public int endWaterHeight = 64;
+    public boolean endWaterlog = true;
 
     public static FloodWorldConfig getInstance() {
         if (instance == null) {

@@ -2,6 +2,7 @@ package com.floodworld.mixin;
 
 import com.floodworld.config.FloodWorldConfig;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -19,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class ChunkGeneratorMixin {
 
     @Inject(method = "applyBiomeDecoration", at = @At("TAIL"))
-    private void floodworld$fillAirWithWater(WorldGenLevel world, ChunkAccess chunk,
+    private void floodworld(WorldGenLevel world, ChunkAccess chunk,
                                               StructureManager structureManager, CallbackInfo ci) {
         FloodWorldConfig config = FloodWorldConfig.getInstance();
         if (!config.replaceAir && !config.replaceCaveAir) return;
@@ -27,18 +28,22 @@ public class ChunkGeneratorMixin {
         var dimension = world.getLevel().dimension();
         int maxY;
         boolean isOverworld;
+        boolean waterlog;
         if (dimension.equals(Level.OVERWORLD)) {
             if (!config.enableOverworld) return;
             maxY = config.overworldWaterHeight;
             isOverworld = true;
+            waterlog = config.overworldWaterlog;
         } else if (dimension.equals(Level.NETHER)) {
             if (!config.enableNether) return;
             maxY = config.netherWaterHeight;
             isOverworld = false;
+            waterlog = config.netherWaterlog;
         } else if (dimension.equals(Level.END)) {
             if (!config.enableEnd) return;
             maxY = config.endWaterHeight;
             isOverworld = false;
+            waterlog = config.endWaterlog;
         } else {
             return;
         }
@@ -59,19 +64,25 @@ public class ChunkGeneratorMixin {
                     var state = world.getBlockState(mutablePos);
 
                     boolean isAirLike = state.isAir() || state.is(Blocks.VOID_AIR);
-                    if (!isAirLike) continue;
 
-                    if (!isOverworld) {
-                        world.setBlock(mutablePos, waterState, 2);
-                        continue;
-                    }
+                    if (isAirLike) {
+                        if (!isOverworld) {
+                            world.setBlock(mutablePos, waterState, 2);
+                            continue;
+                        }
 
-                    boolean isCave = y < surfaceY && !isUnderVegetation(world, scanPos, x, y, z, surfaceY);
+                        boolean isCave = y < surfaceY && !isUnderVegetation(world, scanPos, x, y, z, surfaceY);
 
-                    if (isCave && config.replaceCaveAir) {
-                        world.setBlock(mutablePos, waterState, 2);
-                    } else if (!isCave && config.replaceAir) {
-                        world.setBlock(mutablePos, waterState, 2);
+                        if (isCave && config.replaceCaveAir) {
+                            world.setBlock(mutablePos, waterState, 2);
+                        } else if (!isCave && config.replaceAir) {
+                            world.setBlock(mutablePos, waterState, 2);
+                        }
+                    } else if (waterlog) {
+                        if (state.hasProperty(BlockStateProperties.WATERLOGGED)
+                                && !state.getValue(BlockStateProperties.WATERLOGGED)) {
+                            world.setBlock(mutablePos, state.setValue(BlockStateProperties.WATERLOGGED, true), 2);
+                        }
                     }
                 }
             }
