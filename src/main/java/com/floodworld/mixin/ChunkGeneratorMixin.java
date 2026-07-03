@@ -2,6 +2,7 @@ package com.floodworld.mixin;
 
 import com.floodworld.config.FloodWorldConfig;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.WorldGenLevel;
@@ -23,7 +24,7 @@ public class ChunkGeneratorMixin {
     private void floodworld(WorldGenLevel world, ChunkAccess chunk,
                                               StructureManager structureManager, CallbackInfo ci) {
         FloodWorldConfig config = FloodWorldConfig.getInstance();
-        if (!config.replaceAir && !config.replaceCaveAir) return;
+        if (!config.replaceAir && !config.replaceCaveAir && !config.replaceWaterBreakable && !config.overworldWaterlog) return;
 
         var dimension = world.getLevel().dimension();
         int maxY;
@@ -78,15 +79,42 @@ public class ChunkGeneratorMixin {
                         } else if (!isCave && config.replaceAir) {
                             world.setBlock(mutablePos, waterState, 2);
                         }
-                    } else if (waterlog) {
-                        if (state.hasProperty(BlockStateProperties.WATERLOGGED)
-                                && !state.getValue(BlockStateProperties.WATERLOGGED)) {
-                            world.setBlock(mutablePos, state.setValue(BlockStateProperties.WATERLOGGED, true), 2);
-                        }
+                    } else if (waterlog && state.hasProperty(BlockStateProperties.WATERLOGGED)
+                            && !state.getValue(BlockStateProperties.WATERLOGGED)) {
+                        world.setBlock(mutablePos, state.setValue(BlockStateProperties.WATERLOGGED, true), 2);
+                    } else if (config.replaceWaterBreakable && isWaterBreakable(state)) {
+                        world.setBlock(mutablePos, waterState, 2);
                     }
                 }
             }
         }
+    }
+
+    private static boolean isWaterBreakable(BlockState state) {
+        if (state.isAir() || state.liquid()) return false;
+        if (state.hasProperty(BlockStateProperties.WATERLOGGED)) return false;
+
+        return state.is(BlockTags.REPLACEABLE)
+                || state.is(BlockTags.RAILS)
+                || state.is(BlockTags.BUTTONS)
+                || state.is(BlockTags.PRESSURE_PLATES)
+                || state.is(BlockTags.WOOL_CARPETS)
+                || state.is(Blocks.TORCH) || state.is(Blocks.WALL_TORCH)
+                || state.is(Blocks.SOUL_TORCH) || state.is(Blocks.SOUL_WALL_TORCH)
+                || state.is(Blocks.REDSTONE_TORCH) || state.is(Blocks.REDSTONE_WALL_TORCH)
+                || state.is(Blocks.REDSTONE_WIRE)
+                || state.is(Blocks.REPEATER)
+                || state.is(Blocks.COMPARATOR)
+                || state.is(Blocks.LEVER)
+                || state.is(Blocks.COBWEB)
+                || state.is(Blocks.VINE)
+                || state.is(Blocks.HANGING_ROOTS)
+                || state.is(Blocks.SNOW)
+                || state.is(Blocks.SWEET_BERRY_BUSH)
+                || state.is(Blocks.NETHER_SPROUTS)
+                || state.is(Blocks.CRIMSON_ROOTS) || state.is(Blocks.WARPED_ROOTS)
+                || state.is(Blocks.WEEPING_VINES) || state.is(Blocks.WEEPING_VINES_PLANT)
+                || state.is(Blocks.TWISTING_VINES) || state.is(Blocks.TWISTING_VINES_PLANT);
     }
 
     private static boolean isUnderVegetation(WorldGenLevel world, BlockPos.MutableBlockPos scanPos,

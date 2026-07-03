@@ -25,6 +25,9 @@ public class ClothConfigScreenFactory {
         general.addEntry(entryBuilder.startBooleanToggle(Component.literal("Replace Cave Air"), config.replaceCaveAir)
                 .setTooltip(Component.literal("When enabled, underground cave air will also be filled with water."))
                 .setDefaultValue(true).setSaveConsumer(val -> config.replaceCaveAir = val).build());
+        general.addEntry(entryBuilder.startBooleanToggle(Component.literal("Replace Water-Breakable Blocks"), config.replaceWaterBreakable)
+                .setTooltip(Component.literal("When enabled, blocks that would be destroyed by water (grass, flowers, torches, rails, redstone, carpets, snow layers, vines, etc.) are replaced with water during chunk generation."))
+                .setDefaultValue(true).setSaveConsumer(val -> config.replaceWaterBreakable = val).build());
 
         ConfigCategory overworld = builder.getOrCreateCategory(Component.literal("Overworld"));
         overworld.addEntry(entryBuilder.startBooleanToggle(Component.literal("Enable Flooding"), config.enableOverworld)
