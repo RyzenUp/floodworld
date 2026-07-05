@@ -6,6 +6,9 @@
   "mixins": [
     "ChunkGeneratorMixin"
   ],
+  "client": [
+    "client.CreateWorldScreenWorldTabMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

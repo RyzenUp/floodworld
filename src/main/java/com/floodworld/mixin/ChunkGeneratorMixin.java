@@ -83,7 +83,7 @@ public class ChunkGeneratorMixin {
                         boolean isCave;
                         if (surfaceConnectedMask != null) {
                             int idx = ((x - startX) * 16 + (z - startZ)) * (maxY - minY) + (y - minY);
-                            isCave = !surfaceConnectedMask[idx];
+                            isCave = !surfaceConnectedMask[idx] && !isUnderVegetation(world, scanPos, x, y, z, surfaceY);
                         } else {
                             isCave = y < surfaceY && !isUnderVegetation(world, scanPos, x, y, z, surfaceY);
                         }
@@ -135,9 +135,11 @@ public class ChunkGeneratorMixin {
      * Flood-fills air blocks from every position known to be at or above its column's surface
      * height, through 6-connected air, to find every air block genuinely reachable from open
      * surface air. Anything not reached (a false in the returned array) is enclosed cave air,
-     * even if it happens to sit under a floating overhang whose column reports a high heightmap
-     * value (e.g. a mushroom cap or jungle canopy) -- unlike the plain heightmap compare, this
-     * follows the actual connected space instead of trusting one column's height alone.
+     * unlike the plain heightmap compare, which follows the actual connected space instead of
+     * trusting one column's height alone.
+     * Doesn't by itself account for solid-but-non-terrain overhangs (tree trunks, mushroom stems,
+     * etc. inflate a column's heightmap the same way a rock overhang would) -- callers still need
+     * the isUnderVegetation exclusion on top of this mask, same as the plain heightmap path.
      * Bounded to the current chunk, so a cave mouth that only opens into a neighboring chunk is
      * still misclassified -- same blind spot the heightmap approach already has.
      */
