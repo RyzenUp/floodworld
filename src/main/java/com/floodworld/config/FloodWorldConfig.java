@@ -15,6 +15,7 @@ public class FloodWorldConfig {
     public boolean replaceAir = true;
     public boolean replaceCaveAir = true;
     public boolean replaceWaterBreakable = true;
+    public boolean caveDetectionFloodFill = false;
 
     public boolean enableOverworld = true;
     public int overworldWaterHeight = 250;

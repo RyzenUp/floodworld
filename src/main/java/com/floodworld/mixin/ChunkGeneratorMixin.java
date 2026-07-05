@@ -17,6 +17,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.ArrayDeque;
+
 @Mixin(ChunkGenerator.class)
 public class ChunkGeneratorMixin {
 
@@ -57,6 +59,12 @@ public class ChunkGeneratorMixin {
         BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
         BlockPos.MutableBlockPos scanPos = new BlockPos.MutableBlockPos();
 
+        boolean[] surfaceConnected = null;
+        if (isOverworld && config.caveDetectionFloodFill && maxY > minY) {
+            surfaceConnected = computeSurfaceConnected(world, chunk, minY, maxY - minY, startX, startZ);
+        }
+        boolean[] surfaceConnectedMask = surfaceConnected;
+
         for (int x = startX; x < startX + 16; x++) {
             for (int z = startZ; z < startZ + 16; z++) {
                 int surfaceY = chunk.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
@@ -72,7 +80,13 @@ public class ChunkGeneratorMixin {
                             continue;
                         }
 
-                        boolean isCave = y < surfaceY && !isUnderVegetation(world, scanPos, x, y, z, surfaceY);
+                        boolean isCave;
+                        if (surfaceConnectedMask != null) {
+                            int idx = ((x - startX) * 16 + (z - startZ)) * (maxY - minY) + (y - minY);
+                            isCave = !surfaceConnectedMask[idx];
+                        } else {
+                            isCave = y < surfaceY && !isUnderVegetation(world, scanPos, x, y, z, surfaceY);
+                        }
 
                         if (isCave && config.replaceCaveAir) {
                             world.setBlock(mutablePos, waterState, 2);
@@ -115,6 +129,71 @@ public class ChunkGeneratorMixin {
                 || state.is(Blocks.CRIMSON_ROOTS) || state.is(Blocks.WARPED_ROOTS)
                 || state.is(Blocks.WEEPING_VINES) || state.is(Blocks.WEEPING_VINES_PLANT)
                 || state.is(Blocks.TWISTING_VINES) || state.is(Blocks.TWISTING_VINES_PLANT);
+    }
+
+    /**
+     * Flood-fills air blocks from every position known to be at or above its column's surface
+     * height, through 6-connected air, to find every air block genuinely reachable from open
+     * surface air. Anything not reached (a false in the returned array) is enclosed cave air,
+     * even if it happens to sit under a floating overhang whose column reports a high heightmap
+     * value (e.g. a mushroom cap or jungle canopy) -- unlike the plain heightmap compare, this
+     * follows the actual connected space instead of trusting one column's height alone.
+     * Bounded to the current chunk, so a cave mouth that only opens into a neighboring chunk is
+     * still misclassified -- same blind spot the heightmap approach already has.
+     */
+    private static boolean[] computeSurfaceConnected(WorldGenLevel world, ChunkAccess chunk,
+                                                      int minY, int height, int startX, int startZ) {
+        int size = 16 * 16 * height;
+        boolean[] airLike = new boolean[size];
+        boolean[] open = new boolean[size];
+        ArrayDeque<Integer> queue = new ArrayDeque<>();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+        for (int lx = 0; lx < 16; lx++) {
+            for (int lz = 0; lz < 16; lz++) {
+                int x = startX + lx;
+                int z = startZ + lz;
+                int colSurfaceY = chunk.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                for (int ly = 0; ly < height; ly++) {
+                    int y = minY + ly;
+                    pos.set(x, y, z);
+                    var state = world.getBlockState(pos);
+                    boolean isAir = state.isAir() || state.is(Blocks.VOID_AIR);
+                    int idx = (lx * 16 + lz) * height + ly;
+                    airLike[idx] = isAir;
+                    if (isAir && y >= colSurfaceY) {
+                        open[idx] = true;
+                        queue.add(idx);
+                    }
+                }
+            }
+        }
+
+        while (!queue.isEmpty()) {
+            int idx = queue.poll();
+            int ly = idx % height;
+            int col = idx / height;
+            int lz = col % 16;
+            int lx = col / 16;
+
+            visitNeighbor(lx + 1, lz, ly, height, airLike, open, queue);
+            visitNeighbor(lx - 1, lz, ly, height, airLike, open, queue);
+            visitNeighbor(lx, lz + 1, ly, height, airLike, open, queue);
+            visitNeighbor(lx, lz - 1, ly, height, airLike, open, queue);
+            visitNeighbor(lx, lz, ly + 1, height, airLike, open, queue);
+            visitNeighbor(lx, lz, ly - 1, height, airLike, open, queue);
+        }
+
+        return open;
+    }
+
+    private static void visitNeighbor(int lx, int lz, int ly, int height,
+                                       boolean[] airLike, boolean[] open, ArrayDeque<Integer> queue) {
+        if (lx < 0 || lx >= 16 || lz < 0 || lz >= 16 || ly < 0 || ly >= height) return;
+        int idx = (lx * 16 + lz) * height + ly;
+        if (!airLike[idx] || open[idx]) return;
+        open[idx] = true;
+        queue.add(idx);
     }
 
     private static boolean isUnderVegetation(WorldGenLevel world, BlockPos.MutableBlockPos scanPos,
