@@ -28,12 +28,16 @@ public class ClothConfigScreenFactory {
         general.addEntry(entryBuilder.startBooleanToggle(Component.literal("Replace Water-Breakable Blocks"), config.replaceWaterBreakable)
                 .setTooltip(Component.literal("When enabled, blocks that would be destroyed by water (grass, flowers, torches, rails, redstone, carpets, snow layers, vines, etc.) are replaced with water during chunk generation."))
                 .setDefaultValue(true).setSaveConsumer(val -> config.replaceWaterBreakable = val).build());
+        general.addEntry(entryBuilder.startBooleanToggle(Component.literal("Advanced Cave Detection (Flood Fill)"), config.caveDetectionFloodFill)
+                .setTooltip(Component.literal("When enabled, cave air is detected with a per-chunk flood fill instead of a per-column heightmap compare. More accurate under overhangs and floating terrain (mushroom caps, wide canopies), at the cost of more generation-time CPU/memory per chunk."))
+                .setDefaultValue(false).setSaveConsumer(val -> config.caveDetectionFloodFill = val).build());
 
         ConfigCategory overworld = builder.getOrCreateCategory(Component.literal("Overworld"));
         overworld.addEntry(entryBuilder.startBooleanToggle(Component.literal("Enable Flooding"), config.enableOverworld)
                 .setTooltip(Component.literal("Enable flooding in the Overworld."))
                 .setDefaultValue(true).setSaveConsumer(val -> config.enableOverworld = val).build());
-        overworld.addEntry(entryBuilder.startIntSlider(Component.literal("Water Height"), config.overworldWaterHeight, -64, 320)
+        overworld.addEntry(entryBuilder.startIntField(Component.literal("Water Height"), config.overworldWaterHeight)
+                .setMin(-64).setMax(320)
                 .setTooltip(Component.literal("The maximum Y level that water will be placed up to in the Overworld. Default: 250."))
                 .setDefaultValue(250).setSaveConsumer(val -> config.overworldWaterHeight = val).build());
         overworld.addEntry(entryBuilder.startBooleanToggle(Component.literal("Waterlog Blocks"), config.overworldWaterlog)
@@ -44,7 +48,8 @@ public class ClothConfigScreenFactory {
         nether.addEntry(entryBuilder.startBooleanToggle(Component.literal("Enable Flooding"), config.enableNether)
                 .setTooltip(Component.literal("Enable flooding in the Nether."))
                 .setDefaultValue(false).setSaveConsumer(val -> config.enableNether = val).build());
-        nether.addEntry(entryBuilder.startIntSlider(Component.literal("Water Height"), config.netherWaterHeight, 0, 256)
+        nether.addEntry(entryBuilder.startIntField(Component.literal("Water Height"), config.netherWaterHeight)
+                .setMin(0).setMax(256)
                 .setTooltip(Component.literal("The maximum Y level that water will be placed up to in the Nether. Default: 100."))
                 .setDefaultValue(100).setSaveConsumer(val -> config.netherWaterHeight = val).build());
         nether.addEntry(entryBuilder.startBooleanToggle(Component.literal("Waterlog Blocks"), config.netherWaterlog)
@@ -55,7 +60,8 @@ public class ClothConfigScreenFactory {
         end.addEntry(entryBuilder.startBooleanToggle(Component.literal("Enable Flooding"), config.enableEnd)
                 .setTooltip(Component.literal("Enable flooding in the End."))
                 .setDefaultValue(false).setSaveConsumer(val -> config.enableEnd = val).build());
-        end.addEntry(entryBuilder.startIntSlider(Component.literal("Water Height"), config.endWaterHeight, 0, 256)
+        end.addEntry(entryBuilder.startIntField(Component.literal("Water Height"), config.endWaterHeight)
+                .setMin(0).setMax(256)
                 .setTooltip(Component.literal("The maximum Y level that water will be placed up to in the End. Default: 64."))
                 .setDefaultValue(64).setSaveConsumer(val -> config.endWaterHeight = val).build());
         end.addEntry(entryBuilder.startBooleanToggle(Component.literal("Waterlog Blocks"), config.endWaterlog)
