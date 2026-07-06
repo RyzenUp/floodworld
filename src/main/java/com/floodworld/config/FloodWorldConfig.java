@@ -16,6 +16,7 @@ public class FloodWorldConfig {
     public boolean replaceCaveAir = true;
     public boolean replaceWaterBreakable = true;
     public boolean caveDetectionFloodFill = false;
+    public String replacementBlock = "minecraft:water";
 
     public boolean enableOverworld = true;
     public int overworldWaterHeight = 250;

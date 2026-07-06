@@ -1,6 +1,10 @@
 package com.floodworld.mixin;
 
 import com.floodworld.config.FloodWorldConfig;
+import com.mojang.logging.LogUtils;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -12,6 +16,7 @@ import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.Level;
 import net.minecraft.tags.BlockTags;
+import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -21,6 +26,8 @@ import java.util.ArrayDeque;
 
 @Mixin(ChunkGenerator.class)
 public class ChunkGeneratorMixin {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     @Inject(method = "applyBiomeDecoration", at = @At("TAIL"))
     private void floodworld(WorldGenLevel world, ChunkAccess chunk,
@@ -55,7 +62,8 @@ public class ChunkGeneratorMixin {
         int startX = chunk.getPos().getMinBlockX();
         int startZ = chunk.getPos().getMinBlockZ();
 
-        var waterState = Blocks.WATER.defaultBlockState();
+        BlockState replacementState = resolveReplacementBlock(config.replacementBlock);
+        boolean isWaterReplacement = replacementState.is(Blocks.WATER);
         BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
         BlockPos.MutableBlockPos scanPos = new BlockPos.MutableBlockPos();
 
@@ -76,7 +84,7 @@ public class ChunkGeneratorMixin {
 
                     if (isAirLike) {
                         if (!isOverworld) {
-                            world.setBlock(mutablePos, waterState, 2);
+                            world.setBlock(mutablePos, replacementState, 2);
                             continue;
                         }
 
@@ -89,19 +97,31 @@ public class ChunkGeneratorMixin {
                         }
 
                         if (isCave && config.replaceCaveAir) {
-                            world.setBlock(mutablePos, waterState, 2);
+                            world.setBlock(mutablePos, replacementState, 2);
                         } else if (!isCave && config.replaceAir) {
-                            world.setBlock(mutablePos, waterState, 2);
+                            world.setBlock(mutablePos, replacementState, 2);
                         }
-                    } else if (waterlog && state.hasProperty(BlockStateProperties.WATERLOGGED)
+                    } else if (waterlog && isWaterReplacement && state.hasProperty(BlockStateProperties.WATERLOGGED)
                             && !state.getValue(BlockStateProperties.WATERLOGGED)) {
                         world.setBlock(mutablePos, state.setValue(BlockStateProperties.WATERLOGGED, true), 2);
                     } else if (config.replaceWaterBreakable && isWaterBreakable(state)) {
-                        world.setBlock(mutablePos, waterState, 2);
+                        world.setBlock(mutablePos, replacementState, 2);
                     }
                 }
             }
         }
+    }
+
+    private static BlockState resolveReplacementBlock(String id) {
+        ResourceLocation loc = ResourceLocation.tryParse(id);
+        if (loc != null) {
+            Block block = BuiltInRegistries.BLOCK.get(loc);
+            if (block != null && block != Blocks.AIR) {
+                return block.defaultBlockState();
+            }
+        }
+        LOGGER.warn("[FloodWorld] Invalid replacementBlock '{}', falling back to water.", id);
+        return Blocks.WATER.defaultBlockState();
     }
 
     private static boolean isWaterBreakable(BlockState state) {
